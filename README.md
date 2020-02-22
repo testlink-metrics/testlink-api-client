@@ -1,7 +1,12 @@
 # testlink-api-client
+[![org](https://img.shields.io/badge/org-truth%20%26%20insurance%20workshop-informational)](http://bx.baoxian-sz.com)
+![author](https://img.shields.io/badge/author-v.stone@163.com-informational)
+![github](https://img.shields.io/github/license/seoktaehyeon/testlink-api-client)
+[![pypi](https://img.shields.io/pypi/v/TestlinkApiClient.svg)](https://pypi.org/project/TestlinkApiClient/)
+[![ref](https://img.shields.io/badge/ref-testlink%20api%20xmlrpc-informational)](https://github.com/TestLinkOpenSourceTRMS/testlink-code/blob/testlink_1_9/lib/api/xmlrpc/v1/xmlrpc.class.php)
 
 ## XML-RPC Client For TestLink
-##### [testlink api xmlrpc ref doc](https://github.com/TestLinkOpenSourceTRMS/testlink-code/blob/testlink_1_9/lib/api/xmlrpc/v1/xmlrpc.class.php)
+
 ##### Installation
 ```bash
 #!/bin/bash
@@ -10,7 +15,7 @@ pip install TestlinkApiCLient
 ##### Usage
 ```python
 #!/usr/bin/env python
-import TestlinkApiClient.xmlrpc import TestlinkClient
+from TestlinkApiClient.xmlrpc import TestlinkClient
 
 # Connect Testlink
 testlink = TestlinkClient(url='Testlink Access Url', user='Testlink Username', dev_key='Personal Api Key')
