@@ -23,9 +23,16 @@ class TestlinkClient(object):
             'execution_type': '1'  # Manual
         }
 
+    @staticmethod
+    def _check_results(rsp_results):
+        if isinstance(rsp_results, list) and rsp_results[0].get('code'):
+            raise Exception(rsp_results[0])
+
     def _get_projects(self):
         param = self.dev_key.copy()
-        return self.client.tl.getProjects(param)
+        results = self.client.tl.getProjects(param)
+        self._check_results(results)
+        return results
 
     def list_project(self):
         names = list()
@@ -36,7 +43,9 @@ class TestlinkClient(object):
     def _get_project_id(self, project_name: str):
         param = self.dev_key.copy()
         param['testprojectname'] = project_name
-        return self.client.tl.getTestProjectByName(param).get('id')
+        results = self.client.tl.getTestProjectByName(param).get('id')
+        self._check_results(results)
+        return results
 
     def _get_project_prefix(self, project_name: str):
         param = self.dev_key.copy()
@@ -46,7 +55,9 @@ class TestlinkClient(object):
     def _get_project_test_plans(self, project_name: str):
         param = self.dev_key.copy()
         param['testprojectid'] = self._get_project_id(project_name)
-        return self.client.tl.getProjectTestPlans(param)
+        results = self.client.tl.getProjectTestPlans(param)
+        self._check_results(results)
+        return results
 
     def list_project_test_plan(self, project_name: str):
         names = list()
@@ -58,12 +69,16 @@ class TestlinkClient(object):
         param = self.dev_key.copy()
         param['testprojectname'] = project_name
         param['testplanname'] = testplan_name
-        return self.client.tl.getTestPlanByName(param).get('id')
+        results = self.client.tl.getTestPlanByName(param).get('id')
+        self._check_results(results)
+        return results
 
     def _get_root_suites(self, project_name: str):
         param = self.dev_key.copy()
         param['testprojectid'] = self._get_project_id(project_name)
-        return self.client.tl.getFirstLevelTestSuitesForTestProject(param)
+        results = self.client.tl.getFirstLevelTestSuitesForTestProject(param)
+        self._check_results(results)
+        return results
 
     def _get_suites(self, project_name: str, suite_name: str):
         param = self.dev_key.copy()
@@ -85,7 +100,9 @@ class TestlinkClient(object):
         param = self.dev_key.copy()
         param['prefix'] = self._get_project_prefix(project_name)
         param['testsuitename'] = suite_name
-        return self.client.tl.getTestSuite(param)[0].get('id')
+        results = self.client.tl.getTestSuite(param)[0].get('id')
+        self._check_results(results)
+        return results
 
     def _get_test_cases(self, project_name: str, suite_name: str):
         param = self.dev_key.copy()
@@ -112,5 +129,21 @@ class TestlinkClient(object):
         param['authorlogin'] = self.user
         param['summary'] = summary
         param['steps'] = steps
-        return self.client.tl.createTestCase(param)
+        results = self.client.tl.createTestCase(param)
+        self._check_results(results)
+        return results
 
+    def create_project(self, project_name: str, prefix=None):
+        param = self.dev_key.copy()
+        param['testprojectname'] = project_name
+        param['testcaseprefix'] = prefix if prefix else project_name
+        results = self.client.tl.createTestProject(param)
+        self._check_results(results)
+        return results[0].get('id')
+
+    def delete_project(self, project_name: str):
+        param = self.dev_key.copy()
+        param['testprojectid'] = self._get_project_id(project_name)
+        results = self.client.tl.deleteTestProject(param)
+        self._check_results(results)
+        return results

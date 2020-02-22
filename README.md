@@ -38,6 +38,10 @@ testlink.get_suite(project_name='Project Name', suite_name='Suite Name')
 # Get the Test Case
 testlink.get_test_case(project_name='Project Name', testcase_ext_id='Testcase external ID')
 
+# Create Project
+testlink.create_project(project_name='Project Name')
+testlink.create_project(project_name='Project Name', prefix='Prefix')
+
 # Create a Test Case into the suite 
 testlink.create_test_case(project_name='Project Name', suite_name='Suite Name', testcase_name='Test Case Title') 
 testlink.create_test_case(project_name='Project Name', suite_name='Suite Name', testcase_name='Test Case Title', summary='Test Case Summary', steps='Test Case Steps')
