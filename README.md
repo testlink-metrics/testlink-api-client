@@ -24,7 +24,7 @@ testlink = TestlinkClient(url='Testlink Access Url', user='Testlink Username', d
 testlink.list_project()
 
 # List Test Plan of the project
-testlink.list_project_test_plan(project_name='Project Name')
+testlink.list_plan(project_name='Project Name')
 
 # List Suite of the project root path
 testlink.list_suite(project_name='Project Name')
