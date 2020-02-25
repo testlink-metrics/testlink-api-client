@@ -130,20 +130,20 @@ class TestlinkClient(object):
             testcases[testcase.get('external_id')] = testcase.get('name')
         return testcases
 
-    def get_test_case(self, project_name: str, testcase_ext_id: str):
+    def get_case(self, project_name: str, case_ext_id: str):
         param = self.dev_key.copy()
         param['testprojectid'] = self._get_project_id(project_name)
-        param['testcaseexternalid'] = testcase_ext_id
+        param['testcaseexternalid'] = case_ext_id
         results = self.client.tl.getTestCase(param)
         self._check_results(results)
         return results
 
-    def create_test_case(self, project_name: str, suite_name: str, testcase_name: str,
-                         summary='', steps='', suite_id=None):
+    def create_case(self, project_name: str, suite_name: str, case_name: str,
+                    summary='', steps='', suite_id=None):
         param = self.dev_key.copy()
         param['testprojectid'] = self._get_project_id(project_name)
         param['testsuiteid'] = suite_id if suite_id else self._get_suite_id(project_name, suite_name)
-        param['testcasename'] = testcase_name
+        param['testcasename'] = case_name
         param['authorlogin'] = self.user
         param['summary'] = summary
         param['steps'] = steps
