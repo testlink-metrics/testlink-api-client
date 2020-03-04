@@ -30,7 +30,10 @@ class TestlinkClient(object):
 
     @staticmethod
     def _check_results(rsp_results):
-        if isinstance(rsp_results, list) and len(rsp_results) == 1 and rsp_results[0].get('code'):
+        if isinstance(rsp_results, list) \
+                and len(rsp_results) == 1 \
+                and isinstance(rsp_results[0], dict) \
+                and rsp_results[0].get('code'):
             raise Exception(rsp_results[0])
 
     @staticmethod
@@ -420,7 +423,7 @@ class TestlinkClient(object):
         cases = self._get_test_cases_for_plan(project_name, project_id, plan_name, plan_id,
                                               build_name, build_id, platform_name, platform_id)
         for testcase in cases.values():
-            tc = testcase[str(len(testcase))]
+            tc = testcase[sorted(testcase.keys())[0]]
             testcases[tc.get('full_external_id')] = {
                 'case_name': tc.get('tcase_name'),
                 'exec_status': tc.get('exec_status'),
