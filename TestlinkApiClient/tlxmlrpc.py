@@ -218,7 +218,7 @@ class TestlinkClient(object):
         :return:
         """
         param = self.dev_key.copy()
-        param['prefix'] = self._get_project_prefix(project_name)
+        param['prefix'] = self._get_project_prefix(project_name, project_id)
         param['testsuitename'] = suite_name
         results = self.client.getTestSuite(param)
         self._check_results(results)
@@ -236,7 +236,8 @@ class TestlinkClient(object):
                 ids.append(result.get('id'))
             raise Exception('Find same name suites: %s %s in project: %s' % (suite_name, ids, project_name))
 
-    def _create_suite(self, project_name: str, suite_name: str, parent_suite_name: str = ''):
+    def _create_suite(self, project_name: str = '', project_id: str = '',
+                      suite_name: str = '', parent_suite_name: str = ''):
         """
         tl.createTestSuite
         :param project_name:
@@ -245,7 +246,7 @@ class TestlinkClient(object):
         :return:
         """
         param = self.dev_key.copy()
-        param['prefix'] = self._get_project_prefix(project_name)
+        param['prefix'] = self._get_project_prefix(project_name, project_id)
         param['testsuitename'] = suite_name
         if parent_suite_name:
             param['parentid'] = self._get_suite_id(project_name, parent_suite_name)
@@ -253,7 +254,8 @@ class TestlinkClient(object):
         self._check_results(results)
         return results
 
-    def _get_test_cases_for_suite(self, project_name: str = '', project_id: str = '', suite_name: str = '', suite_id: str = ''):
+    def _get_test_cases_for_suite(self, project_name: str = '', project_id: str = '',
+                                  suite_name: str = '', suite_id: str = ''):
         """
         tl.getTestCasesForTestSuite
         :param project_name:
@@ -495,11 +497,12 @@ class TestlinkClient(object):
         self._check_results(results)
         return results
 
-    def create_case(self, project_name: str, suite_name: str, case_name: str,
-                    summary='', steps='', suite_id=None):
+    def create_case(self, project_name: str = '', project_id: str = '',
+                    suite_name: str = '', suite_id: str = '',
+                    case_name: str = '', summary='', steps=''):
         param = self.dev_key.copy()
-        param['testprojectid'] = self._get_project_id(project_name)
-        param['testsuiteid'] = suite_id if suite_id else self._get_suite_id(project_name, suite_name)
+        param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
+        param['testsuiteid'] = suite_id if suite_id else self._get_suite_id(project_name, project_id, suite_name)
         param['testcasename'] = case_name
         param['authorlogin'] = self.user
         param['summary'] = summary
