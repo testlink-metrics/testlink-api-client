@@ -122,6 +122,29 @@ class TestlinkClient(object):
         self._check_results(results)
         return results
 
+    def _get_requirements(self, project_name: str = '', project_id: str = '',
+                          plan_name: str = '', plan_id: str = '',
+                          platform_name: str = '', platform_id: str = ''):
+        """
+        tl.getRequirements
+        :param project_name:
+        :param project_id:
+        :param plan_name:
+        :param plan_id:
+        :param platform_name:
+        :param platform_id:
+        :return:
+        """
+        param = self.dev_key.copy()
+        param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
+        if plan_id or plan_name:
+            param['testplanid'] = plan_id if plan_id else self._get_test_plan_id(project_name, project_id, plan_name)
+        if platform_id or platform_name:
+            param['platformid'] = platform_id if platform_id else ''
+        results = self.client.getRequirements(param)
+        self._check_results(results)
+        return results
+
     def _get_plan_by_name(self, project_name: str = '', project_id: str = '', plan_name: str = ''):
         """
         tl.getTestPlanByName
@@ -292,7 +315,9 @@ class TestlinkClient(object):
             param['platformid'] = platform_id
         if platform_name:
             param['platformname'] = platform_name
-        return self.client.getTestCasesForTestPlan(param)
+        results = self.client.getTestCasesForTestPlan(param)
+        self._check_results(results)
+        return results
 
     def _create_test_case(self, project_name: str, suite_name: str, case_name: str,
                           summary='', steps='', suite_id=None):
@@ -362,7 +387,17 @@ class TestlinkClient(object):
             param['platformname'] = platform_name
         if case_ext_id:
             param['testcaseexternalid'] = case_ext_id
+        param['options'] = {'getBugs': True}
         results = self.client.getLastExecutionResult(param)
+        self._check_results(results)
+        return results
+
+    def _get_all_execution_results(self, plan_id, case_ext_id):
+        param = self.dev_key.copy()
+        param['testplanid'] = plan_id
+        param['testcaseexternalid'] = case_ext_id
+        param['options'] = {'getBugs': True}
+        results = self.client.getAllExecutionsResults(param)
         self._check_results(results)
         return results
 
@@ -426,9 +461,15 @@ class TestlinkClient(object):
                                               build_name, build_id, platform_name, platform_id)
         for testcase in cases.values():
             tc = testcase[sorted(testcase.keys())[0]]
-            testcases[tc.get('full_external_id')] = {
+            tc_id = tc.get('full_external_id')
+            tc_bugs = list()
+            if tc.get('exec_status') in ['f', 'b']:
+                for bid in self.get_all_execution_result(plan_id, tc_id).get('bugs'):
+                    tc_bugs.append(bid.get('bug_id'))
+            testcases[tc_id] = {
                 'case_name': tc.get('tcase_name'),
                 'exec_status': tc.get('exec_status'),
+                'bugs': tc_bugs,
             }
         self._tree(testcases, root=plan_name)
         return testcases
@@ -563,6 +604,11 @@ class TestlinkClient(object):
             last_results[exe_result.get('testcaseexternalid')] = exe_result.get('status') if exe_result.get('status') else 'n'
         self._tree(last_results.values())
         return last_results
+
+    def get_all_execution_result(self, plan_id, case_ext_id):
+        all_results = self._get_all_execution_results(plan_id, case_ext_id)
+        for key, value in all_results.items():
+            return value
 
     # Report Operation
     def get_report_for_plan(self, project_name: str = '', project_id: str = '',
