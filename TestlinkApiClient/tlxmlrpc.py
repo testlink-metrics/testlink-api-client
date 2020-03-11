@@ -7,7 +7,7 @@ from pprint import pprint
 
 
 class TestlinkClient(object):
-    def __init__(self, url: str, user: str, dev_key: str):
+    def __init__(self, url: str, user: str, dev_key: str, tree=False):
         self.url = url + '/lib/api/xmlrpc/v1/xmlrpc.php'
         self.user = user
         self.dev_key = {
@@ -27,6 +27,7 @@ class TestlinkClient(object):
             'expected_results': 'result#1',
             'execution_type': '1'  # Manual
         }
+        self.tree = tree
 
     @staticmethod
     def _check_results(rsp_results):
@@ -36,8 +37,9 @@ class TestlinkClient(object):
                 and rsp_results[0].get('code'):
             raise Exception(rsp_results[0])
 
-    @staticmethod
-    def _tree(content, root: str = '.'):
+    def _tree(self, content, root: str = '.'):
+        if self.tree is False:
+            return True
         if root == '':
             root = '.'
         if content is None:
