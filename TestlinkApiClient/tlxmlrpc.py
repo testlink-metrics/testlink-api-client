@@ -3,7 +3,6 @@
 # Author: Will v.stone@163.com
 
 from xmlrpc.client import ServerProxy
-from pprint import pprint
 
 
 class TestlinkClient(object):
@@ -144,6 +143,17 @@ class TestlinkClient(object):
         if platform_id or platform_name:
             param['platformid'] = platform_id if platform_id else ''
         results = self.client.getRequirements(param)
+        self._check_results(results)
+        return results
+
+    def _get_requirement_coverage(self, project_name: str = '', project_id: str = '',
+                                  requirement_doc_id: str = ''):
+        param = self.dev_key.copy()
+        if project_id or project_name:
+            param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
+        if requirement_doc_id:
+            param['requirementdocid'] = requirement_doc_id
+        results = self.client.getReqCoverage(param)
         self._check_results(results)
         return results
 
@@ -446,8 +456,50 @@ class TestlinkClient(object):
         self._check_results(results)
         return results
 
+    def list_requirement(self, project_name: str = '', project_id: str = '',
+                         plan_name: str = '', plan_id: str = '',
+                         platform_name: str = '', platform_id: str = ''):
+        """
+        Get Requirements From The Project [Plan Platform]
+        :param project_name:
+        :param project_id:
+        :param plan_name:
+        :param plan_id:
+        :param platform_name:
+        :param platform_id:
+        :return:
+            {req_id: req_doc_id}
+        """
+        reqs = dict()
+        for req in self._get_requirements(project_name, project_id, plan_name, plan_id, platform_name, platform_id):
+            reqs[req.get('id')] = req.get('req_doc_id')
+        return reqs
+
+    def get_requirement(self, project_name: str = '', project_id: str = '',
+                        requirement_doc_id: str = ''):
+        """
+        Get Case List From The Requirement
+        :param project_name:
+        :param project_id:
+        :param requirement_doc_id:
+        :return:
+            {case_external_id: case_name}
+        """
+        cases = dict()
+        prefix = self._get_project_prefix(project_name, project_id)
+        for case in self._get_requirement_coverage(project_name, project_id, requirement_doc_id):
+            cases['%s-%s' % (prefix, case.get('tc_external_id'))] = case.get('name')
+        return cases
+
     # Plan Operations
     def list_plan(self, project_name: str = '', project_id: str = ''):
+        """
+        Get Plan List From The Project
+        :param project_name:
+        :param project_id:
+        :return:
+            {plan_id: plan_name}
+        """
         plans = dict()
         for testplan in self._get_project_test_plans(project_name=project_name, project_id=project_id):
             plans[testplan.get('id')] = testplan.get('name')
@@ -457,13 +509,37 @@ class TestlinkClient(object):
     def get_plan(self, project_name: str = '', project_id: str = '',
                  plan_name: str = '', plan_id: str = '',
                  build_name: str = '', build_id: str = '',
-                 platform_name: str = '', platform_id: str = ''):
+                 platform_name: str = '', platform_id: str = '',
+                 requirement_doc_id: str = ''):
+        """
+        Get Case Execution Results From The Plan
+        :param project_name:
+        :param project_id:
+        :param plan_name:
+        :param plan_id:
+        :param build_name:
+        :param build_id:
+        :param platform_name:
+        :param platform_id:
+        :param requirement_doc_id:
+        :return:
+            {
+                case_external_id: {
+                    'case_name': case_name,
+                    'exec_status': exec_status,
+                    'bugs': [bug_id],
+                }
+            }
+        """
         testcases = dict()
         cases = self._get_test_cases_for_plan(project_name, project_id, plan_name, plan_id,
                                               build_name, build_id, platform_name, platform_id)
+        req_cases = self.get_requirement(project_name, project_id, requirement_doc_id).keys() if requirement_doc_id else []
         for testcase in cases.values():
             tc = testcase[sorted(testcase.keys())[0]]
             tc_id = tc.get('full_external_id')
+            if requirement_doc_id and tc_id not in req_cases:
+                continue
             tc_bugs = list()
             if tc.get('exec_status') in ['f', 'b']:
                 for bid in self.get_all_execution_result(plan_id, tc_id).get('bugs'):
