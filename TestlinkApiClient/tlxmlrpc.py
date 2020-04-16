@@ -608,9 +608,9 @@ class TestlinkClient(object):
     def list_case(self, project_name: str = '', project_id: str = '', suite_name: str = '', suite_id: str = ''):
         return self.get_suite(project_name, project_id, suite_name, suite_id)
 
-    def get_case(self, project_name: str, case_ext_id: str):
+    def get_case(self, project_name: str = '', project_id: str = '', case_ext_id: str = ''):
         param = self.dev_key.copy()
-        param['testprojectid'] = self._get_project_id(project_name)
+        param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
         param['testcaseexternalid'] = case_ext_id
         results = self.client.getTestCase(param)
         self._check_results(results)
