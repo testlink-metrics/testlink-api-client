@@ -147,6 +147,25 @@ class TestlinkClient(object):
             raise KeyError('project_id or project_name is required')
         return self._get_project_by_name(project_name=project_name).get('prefix')
 
+    def _delete_project(self, **kwargs):
+        """
+        tl.deleteTestProject
+        :param kwargs:
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        param = self.dev_key.copy()
+        if project_id:
+            param['testprojectid'] = project_id
+        elif project_name:
+            param['testprojectid'] = self._get_project_id(project_name=project_name)
+        else:
+            raise KeyError('project_id or project_name is required')
+        results = self.client.deleteTestProject(param)
+        self._check_results(results)
+        return results
+
     def _get_project_test_plans(self, **kwargs):
         """
         tl.getProjectTestPlans
@@ -468,94 +487,135 @@ class TestlinkClient(object):
             raise KeyError('suite_id or suite_name is required')
         return self.client.getTestCasesForTestSuite(param)
 
-    def _get_test_cases_for_plan(self, project_name: str = '', project_id: str = '',
-                                 plan_name: str = '', plan_id: str = '',
-                                 build_name: str = '', build_id: str = '',
-                                 platform_name: str = '', platform_id: str = ''):
+    def _get_test_cases_for_plan(self, **kwargs):
         """
         tl.getTestCasesForTestPlan
-        :param project_name:
-        :param project_id:
-        :param plan_name:
-        :param plan_id:
-        :param build_name:
-        :param build_id:
-        :param platform_name:
-        :param platform_id:
+        :param kwargs: project_id, project_name, plan_name, plan_id, build_name, build_id, platform_id, platform_name
         :return:
         """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        plan_id = kwargs.get('plan_id')
+        plan_name = kwargs.get('plan_name')
+        build_id = kwargs.get('build_id')
+        build_name = kwargs.get('build_name')
+        platform_id = kwargs.get('platform_id')
+        platform_name = kwargs.get('platform_name')
         param = self.dev_key.copy()
-        param['testplanid'] = plan_id if plan_id else self._get_test_plan_id(project_name, project_id, plan_name)
+        if plan_id:
+            param['testplanid'] = plan_id
+        elif plan_name:
+            if project_id or project_name:
+                param['testplanid'] = self._get_test_plan_id(project_name=project_name, project_id=project_id,
+                                                             plan_name=plan_name)
+            else:
+                raise KeyError('project_id or project_name is required')
+        else:
+            raise KeyError('plan_id or plan_name is required')
         if build_id:
             param['buildid'] = build_id
-        if build_name:
+        elif build_name:
             param['build_name'] = build_name
         if platform_id:
             param['platformid'] = platform_id
-        if platform_name:
+        elif platform_name:
             param['platformname'] = platform_name
         results = self.client.getTestCasesForTestPlan(param)
         self._check_results(results)
         return results
 
-    def _create_test_case(self, project_name: str, suite_name: str, case_name: str,
-                          summary='', steps='', suite_id=None):
+    def _create_test_case(self, **kwargs):
         """
         tl.createTestCase
-        :param project_name:
-        :param suite_name:
-        :param case_name:
-        :param summary:
-        :param steps:
-        :param suite_id:
+        :param kwargs: project_id, project_name, suite_id, suite_name, case_name, summary, steps
         :return:
         """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        suite_id = kwargs.get('suite_id')
+        suite_name = kwargs.get('suite_name')
+        case_name = kwargs.get('case_name')
+        summary = kwargs.get('summary')
+        steps = kwargs.get('steps')
         param = self.dev_key.copy()
-        param['testprojectid'] = self._get_project_id(project_name)
-        param['testsuiteid'] = suite_id if suite_id else self._get_suite_id(project_name, suite_name)
-        param['testcasename'] = case_name
+        if project_id:
+            param['testprojectid'] = project_id
+        elif project_name:
+            param['testprojectid'] = self._get_project_id(project_name=project_name)
+        else:
+            raise KeyError('project_id or project_name is required')
+        if suite_id:
+            param['testsuiteid'] = suite_id
+        elif suite_name:
+            param['testsuiteid'] = self._get_suite_id(project_name=project_name, project_id=project_id,
+                                                      suite_name=suite_name)
+        else:
+            raise KeyError('suite_id or suite_name is required')
+        if case_name:
+            param['testcasename'] = case_name
+        else:
+            raise KeyError('case_name is required')
         param['authorlogin'] = self.user
-        param['summary'] = summary
-        param['steps'] = steps
+        if summary:
+            param['summary'] = summary
+        else:
+            param['summary'] = ''
+        if steps:
+            param['steps'] = steps
+        else:
+            param['steps'] = ''
         results = self.client.createTestCase(param)
         self._check_results(results)
         return results
 
-    def _update_test_case_steps(self, case_ext_id: str, steps):
+    def _update_test_case_steps(self, **kwargs):
         """
         tl.createTestCaseSteps
-        :param case_ext_id:
-        :param steps:
+        :param kwargs: case_ext_id, steps
         :return:
         """
+        case_ext_id = kwargs.get('case_ext_id')
+        steps = kwargs.get('steps')
         param = self.dev_key.copy()
         param['action'] = 'update'
-        param['testcaseexternalid'] = case_ext_id
-        param['steps'] = steps
+        if case_ext_id:
+            param['testcaseexternalid'] = case_ext_id
+        else:
+            raise KeyError('case_ext_id is required')
+        if steps:
+            param['steps'] = steps
+        else:
+            raise KeyError('steps is required')
         results = self.client.createTestCaseSteps(param)
         self._check_results(results)
         return results
 
-    def _get_last_execution_result(self, project_name: str = '', project_id: str = '',
-                                   plan_name: str = '', plan_id: str = '',
-                                   build_name: str = '', build_id: str = '',
-                                   platform_name: str = '', platform_id: str = '',
-                                   case_ext_id: str = ''):
+    def _get_last_execution_result(self, **kwargs):
         """
         tl.getLastExecutionResult
-        :param project_name:
-        :param project_id:
-        :param plan_name:
-        :param plan_id:
-        :param build_name:
-        :param build_id:
-        :param platform_name:
-        :param platform_id:
-        :param case_ext_id:
+        :param kwargs: project_id, project_name, plan_id, plan_name, build_id, build_name, platform_id, platform_name, case_ext_id
         :return:
         """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        plan_id = kwargs.get('plan_id')
+        plan_name = kwargs.get('plan_name')
+        build_id = kwargs.get('build_id')
+        build_name = kwargs.get('build_name')
+        platform_id = kwargs.get('platform_id')
+        platform_name = kwargs.get('platform_name')
+        case_ext_id = kwargs.get('case_ext_id')
         param = self.dev_key.copy()
-        param['testplanid'] = plan_id if plan_id else self._get_test_plan_id(project_name, project_id, plan_name)
+        if plan_id:
+            param['testplanid'] = plan_id
+        elif plan_name:
+            if project_id or project_name:
+                param['testplanid'] = self._get_test_plan_id(project_name=project_name, project_id=project_id,
+                                                             plan_name=plan_name)
+            else:
+                raise KeyError('project_id or project_name is required')
+        else:
+            raise KeyError('plan_id or plan_name is required')
         if build_id:
             param['buildid'] = build_id
         elif build_name:
@@ -571,56 +631,93 @@ class TestlinkClient(object):
         self._check_results(results)
         return results
 
-    def _get_all_execution_results(self, plan_id, case_ext_id):
+    def _get_all_execution_results(self, **kwargs):
+        """
+        Get all execution results
+        :param kwargs: plan_id, case_ext_id
+        :return:
+        """
+        plan_id = kwargs.get('plan_id')
+        case_ext_id = kwargs.get('case_ext_id')
         param = self.dev_key.copy()
-        param['testplanid'] = plan_id
-        param['testcaseexternalid'] = case_ext_id
+        if plan_id:
+            param['testplanid'] = plan_id
+        else:
+            raise KeyError('plan_id is required')
+        if case_ext_id:
+            param['testcaseexternalid'] = case_ext_id
+        else:
+            raise KeyError('case_ext_id is required')
         param['options'] = {'getBugs': True}
         results = self.client.getAllExecutionsResults(param)
         self._check_results(results)
         return results
 
-    def _set_case_execution_result(self, project_name: str = '',
-                                   plan_id: str = '', plan_name: str = '',
-                                   platform_id: str = '', platform_name: str = '',
-                                   build_name: str = '',
-                                   case_ext_id: str = '', case_exe_result: str = '', notes: str = ''):
+    def _set_case_execution_result(self, **kwargs):
         """
         tl.reportTCResult
-        :param project_name:
-        :param plan_id:
-        :param plan_name:
-        :param platform_id:
-        :param platform_name:
-        :param build_name:
-        :param case_ext_id:
-        :param case_exe_result: p, f, b
-        :param notes:
+        :param kwargs: project_id, project_name,
+                       plan_id, plan_name,
+                       build_id, build_name,
+                       platform_id, platform_name,
+                       case_ext_id,
+                       case_exe_result,
+                       notes
         :return:
         """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        plan_id = kwargs.get('plan_id')
+        plan_name = kwargs.get('plan_name')
+        build_id = kwargs.get('build_id')
+        build_name = kwargs.get('build_name')
+        platform_id = kwargs.get('platform_id')
+        platform_name = kwargs.get('platform_name')
+        case_ext_id = kwargs.get('case_ext_id')
+        case_exe_result = kwargs.get('case_exe_result')
+        notes = kwargs.get('notes')
         param = self.dev_key.copy()
         if plan_id:
             param['testplanid'] = plan_id
         elif plan_name:
-            param['testplanid'] = self._get_test_plan_id(project_name=project_name, plan_name=plan_name)
+            if project_id or project_name:
+                param['testplanid'] = self._get_test_plan_id(project_name=project_name, project_id=project_id,
+                                                             plan_name=plan_name)
+            else:
+                raise KeyError('project_id or project_name is required')
         else:
-            raise Exception('plan_id or plan_name is required')
+            raise KeyError('plan_id or plan_name is required')
         if platform_id:
             param['platformid'] = plan_id
         elif platform_name:
             param['platformname'] = platform_name
         else:
-            raise Exception('platform_id or platform_name is required')
-        param['buildname'] = build_name
+            raise KeyError('platform_id or platform_name is required')
+        if build_id:
+            param['buildid'] = build_id
+        elif build_name:
+            param['buildname'] = build_name
+        else:
+            raise KeyError('plan_id or plan_name is required')
         param['testcaseexternalid'] = case_ext_id
-        param['status'] = case_exe_result
-        param['notes'] = notes
+        if case_exe_result in ['p', 'f', 'b']:
+            param['status'] = case_exe_result
+        else:
+            raise KeyError('case_exe_result is required and it should be p, f or b')
+        if notes:
+            param['notes'] = notes
+        else:
+            param['notes'] = ''
         results = self.client.reportTCResult(param)
         self._check_results(results)
         return results
 
     # Project Operations
     def list_project(self):
+        """
+        List all projects
+        :return:
+        """
         projects = dict()
         for project in self._get_projects():
             projects[project.get('id')] = project.get('name')
@@ -631,14 +728,21 @@ class TestlinkClient(object):
     #     pass
 
     def create_project(self, project_name: str, prefix=None):
-        return self._create_project(project_name, prefix)[0].get('id')
+        """
+        Create project
+        :param project_name:
+        :param prefix:
+        :return:
+        """
+        return self._create_project(project_name=project_name, prefix=prefix)[0].get('id')
 
     def delete_project(self, project_name: str):
-        param = self.dev_key.copy()
-        param['testprojectid'] = self._get_project_id(project_name)
-        results = self.client.deleteTestProject(param)
-        self._check_results(results)
-        return results
+        """
+        Delete project
+        :param project_name:
+        :return:
+        """
+        return self.delete_project(project_name=project_name)
 
     def list_requirement(self, project_name: str = '', project_id: str = '',
                          plan_name: str = '', plan_id: str = '',
