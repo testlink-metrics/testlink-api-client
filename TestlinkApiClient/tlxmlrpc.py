@@ -211,14 +211,10 @@ class TestlinkClient(object):
                 project_name=project_name, project_id=project_id,
                 plan_name=plan_name
             )
-        else:
-            raise KeyError('plan_id or plan_name is required')
         if platform_id:
             param['platformid'] = platform_id
         elif platform_name:
             param['platformname'] = platform_name
-        else:
-            raise KeyError('platform_id or platform_name is required')
         results = self.client.getRequirements(param)
         self._check_results(results)
         return results
@@ -239,8 +235,6 @@ class TestlinkClient(object):
             raise KeyError('project_id or project_name is required')
         if requirement_doc_id:
             param['requirementdocid'] = requirement_doc_id
-        else:
-            raise KeyError('requirement_doc_id is required')
         results = self.client.getReqCoverage(param)
         self._check_results(results)
         return results
@@ -377,7 +371,7 @@ class TestlinkClient(object):
             raise KeyError('project_id or project_name is required')
         if suite_id:
             param['testsuiteid'] = suite_id
-        elif project_name:
+        elif suite_name:
             param['testsuiteid'] = self._get_suite_id(project_id=param['testprojectid'], suite_name=suite_name)
         else:
             raise KeyError('suite_id or suite_name is required')
@@ -458,8 +452,6 @@ class TestlinkClient(object):
         elif parent_suite_name:
             param['parentid'] = self._get_suite_id(project_name=project_name, project_id=project_id,
                                                    suite_name=parent_suite_name)
-        else:
-            raise KeyError('parenet_suite_name is required')
         results = self.client.createTestSuite(param)
         self._check_results(results)
         return results
@@ -521,6 +513,30 @@ class TestlinkClient(object):
         elif platform_name:
             param['platformname'] = platform_name
         results = self.client.getTestCasesForTestPlan(param)
+        self._check_results(results)
+        return results
+
+    def _get_test_case(self, **kwargs):
+        """
+        tl.getTestCase
+        :param kwargs: project_id, project_name, case_ext_id
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        project_name = kwargs.get('project_name')
+        case_ext_id = kwargs.get('case_ext_id')
+        param = self.dev_key.copy()
+        if project_id:
+            param['testprojectid'] = project_id
+        elif project_name:
+            param['testprojectid'] = self._get_project_id(project_name=project_name)
+        else:
+            raise KeyError('project_id or project_name is required')
+        if case_ext_id:
+            param['testcaseexternalid'] = case_ext_id
+        else:
+            raise KeyError('case_ext_id is required')
+        results = self.client.getTestCase(param)
         self._check_results(results)
         return results
 
@@ -887,13 +903,23 @@ class TestlinkClient(object):
     #     pass
 
     # Suite Operations
-    def list_suite(self, project_name: str = '', project_id: str = '', suite_name: str = '', suite_id: str = ''):
+    def list_suite(self, project_name: str = '', suite_name: str = '', **kwargs):
+        """
+        List all suites
+        :param project_name:
+        :param suite_name:
+        :param kwargs: project_id, suite_id
+        :return: suites info { suite_id: suite_name}
+        """
+        project_id = kwargs.get('project_id')
+        suite_id = kwargs.get('suite_id')
         suites = dict()
         if suite_id or suite_name:
-            for suite in self._get_suites(project_name, project_id, suite_name, suite_id).values():
+            for suite in self._get_suites(project_name=project_name, project_id=project_id,
+                                          suite_name=suite_name, suite_id=suite_id).values():
                 suites[suite.get('id')] = suite.get('name')
         else:
-            for suite in self._get_root_suites(project_name, project_id):
+            for suite in self._get_root_suites(project_name=project_name, project_id=project_id):
                 suites[suite.get('id')] = suite.get('name')
         # names = list()
         # if suite_name:
@@ -906,53 +932,98 @@ class TestlinkClient(object):
         self._tree(suites.values())
         return suites
 
-    def get_suite(self, project_name: str = '', project_id: str = '',
-                  suite_name: str = '', suite_id: str = ''):
+    def get_suite(self, project_name: str = '', suite_name: str = '', **kwargs):
+        """
+        Get suite information
+        :param project_name:
+        :param suite_name:
+        :param kwargs: project_id, suite_id
+        :return: cases info { external_id: name}
+        """
+        project_id = kwargs.get('project_id')
+        suite_id = kwargs.get('suite_id')
         testcases = dict()
-        cases = self._get_test_cases_for_suite(project_name, project_id, suite_name, suite_id)
+        cases = self._get_test_cases_for_suite(project_name=project_name, project_id=project_id,
+                                               suite_name=suite_name, suite_id=suite_id)
         for testcase in cases:
             testcases[testcase.get('external_id')] = testcase.get('name')
         self._tree(testcases, root=suite_name)
         return testcases
 
-    def create_suite(self, project_name: str, suite_name: str, parent_suite_name=None):
-        return self._create_suite(project_name, suite_name, parent_suite_name)[0].get('id')
+    def create_suite(self, project_name: str = '', suite_name: str = '', parent_suite_name: str = '', **kwargs):
+        """
+        Create suite
+        :param project_name:
+        :param suite_name:
+        :param parent_suite_name:
+        :param kwargs: project_id, suite_id, parent_suite_id
+        :return: case external ID
+        """
+        project_id = kwargs.get('project_id')
+        # suite_id = kwargs.get('suite_id')
+        parent_suite_id = kwargs.get('parent_suite_id')
+        return self._create_suite(project_name=project_name, project_id=project_id, suite_name=suite_name,
+                                  parent_suite_name=parent_suite_name, parent_suite_id=parent_suite_id)[0].get('id')
 
     # Case Operations
-    def list_case(self, project_name: str = '', project_id: str = '', suite_name: str = '', suite_id: str = ''):
-        return self.get_suite(project_name, project_id, suite_name, suite_id)
+    def list_case(self, project_name: str = '', suite_name: str = '', **kwargs):
+        """
+        List all cases
+        :param project_name:
+        :param suite_name:
+        :param kwargs: project_id, suite_id
+        :return: cases info { external_id: name}
+        """
+        project_id = kwargs.get('project_id')
+        suite_id = kwargs.get('suite_id')
+        return self.get_suite(project_name=project_name, project_id=project_id,
+                              suite_name=suite_name, suite_id=suite_id)
 
-    def get_case(self, project_name: str = '', project_id: str = '', case_ext_id: str = ''):
-        param = self.dev_key.copy()
-        param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
-        param['testcaseexternalid'] = case_ext_id
-        results = self.client.getTestCase(param)
-        self._check_results(results)
-        return results
+    def get_case(self, project_name: str = '', case_ext_id: str = '', **kwargs):
+        """
+        Get case information
+        :param project_name:
+        :param case_ext_id:
+        :param kwargs: project_id
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        return self._get_test_case(project_name=project_name, project_id=project_id, case_ext_id=case_ext_id)
 
-    def create_case(self, project_name: str = '', project_id: str = '',
-                    suite_name: str = '', suite_id: str = '',
-                    case_name: str = '', summary='', steps=''):
-        param = self.dev_key.copy()
-        param['testprojectid'] = project_id if project_id else self._get_project_id(project_name)
-        param['testsuiteid'] = suite_id if suite_id else self._get_suite_id(project_name, project_id, suite_name)
-        param['testcasename'] = case_name
-        param['authorlogin'] = self.user
-        param['summary'] = summary
-        param['steps'] = steps
-        results = self.client.createTestCase(param)
-        self._check_results(results)
+    def create_case(self, project_name: str = '', suite_name: str = '', case_name: str = '',
+                    summary='', steps='', **kwargs):
+        """
+        Create test case
+        :param project_name:
+        :param suite_name:
+        :param case_name:
+        :param summary:
+        :param steps:
+        :param kwargs: project_id, suite_id
+        :return: case external ID
+        """
+        project_id = kwargs.get('project_id')
+        suite_id = kwargs.get('suite_id')
+        results = self._create_test_case(project_id=project_id, project_name=project_name,
+                                         suite_id=suite_id, suite_name=suite_name,
+                                         case_name=case_name, summary=summary, steps=steps)
         case_id = {
             'id': results[0]['additionalInfo']['id'],
             'external_id': results[0]['additionalInfo']['external_id'],
         }
-        prefix = self._get_project_prefix(project_name)
+        prefix = self._get_project_prefix(project_name=project_name, project_id=project_id)
         print('ID: %s | External ID: %s-%s | Case Title: %s'
               % (case_id['id'], prefix, case_id['external_id'], case_name))
         return case_id
 
     def update_step(self, case_ext_id: str, steps):
-        feedback = self._update_test_case_steps(case_ext_id, steps).get('feedback')
+        """
+        Update test case steps
+        :param case_ext_id:
+        :param steps:
+        :return:
+        """
+        feedback = self._update_test_case_steps(case_ext_id=case_ext_id, steps=steps).get('feedback')
         results = dict()
         for item in feedback:
             _operation = item.get('operation')
@@ -968,24 +1039,55 @@ class TestlinkClient(object):
         print(show_str)
         return feedback
 
-    def set_execution_result(self, project_name: str, plan_name: str, platform_name: str, build_name: str,
-                             case_ext_id: str, case_exe_result: str, notes=''):
+    def set_execution_result(self, project_name: str = '', plan_name: str = '',
+                             platform_name: str = '', build_name: str = '',
+                             case_ext_id: str = '', case_exe_result: str = '', notes='', **kwargs):
+        """
+        Set execution result into test case
+        :param project_name:
+        :param plan_name:
+        :param platform_name:
+        :param build_name:
+        :param case_ext_id:
+        :param case_exe_result:
+        :param notes:
+        :param kwargs: project_id, plan_id, platform_id, build_id
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
+        platform_id = kwargs.get('platform_id')
+        build_id = kwargs.get('build_id')
         if case_exe_result.lower() in ['p', 'pass', 'passed']:
             case_exe_result = 'p'
         elif case_exe_result.lower() in ['f', 'fail', 'failed']:
             case_exe_result = 'f'
         elif case_exe_result.lower() in ['b', 'block', 'blocked']:
             case_exe_result = 'b'
-        rc_result = self._set_case_execution_result(project_name=project_name, plan_name=plan_name,
-                                                    platform_name=platform_name, build_name=build_name,
-                                                    case_ext_id=case_ext_id, case_exe_result=case_exe_result, notes=notes)
+        rc_result = self._set_case_execution_result(project_name=project_name, project_id=project_id,
+                                                    plan_name=plan_name, plan_id=plan_id,
+                                                    platform_name=platform_name, platform_id=platform_id,
+                                                    build_name=build_name, build_id=build_id,
+                                                    case_ext_id=case_ext_id, case_exe_result=case_exe_result,
+                                                    notes=notes)
         return rc_result[0].get('message')
 
-    def get_last_execution_result(self, project_name: str = '', project_id: str = '',
-                                  plan_name: str = '', plan_id: str = '',
-                                  build_name: str = '', build_id: str = '',
-                                  platform_name: str = '', platform_id: str = '',
-                                  case_ext_id: str = ''):
+    def get_last_execution_result(self, project_name: str = '', plan_name: str = '', build_name: str = '',
+                                  platform_name: str = '', case_ext_id: str = '', **kwargs):
+        """
+        Get the last execution result
+        :param project_name:
+        :param plan_name:
+        :param build_name:
+        :param platform_name:
+        :param case_ext_id:
+        :param kwargs: project_id, plan_id, build_id, platform_id
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
+        build_id = kwargs.get('build_id')
+        platform_id = kwargs.get('platform_id')
         last_results = dict()
         exe_results = self._get_last_execution_result(
             project_name=project_name, project_id=project_id,
@@ -994,20 +1096,38 @@ class TestlinkClient(object):
             platform_name=platform_name, platform_id=platform_id,
             case_ext_id=case_ext_id)
         for exe_result in exe_results:
-            last_results[exe_result.get('testcaseexternalid')] = exe_result.get('status') if exe_result.get('status') else 'n'
+            last_results[exe_result.get('testcaseexternalid')] = exe_result.get('status') \
+                if exe_result.get('status') else 'n'
         self._tree(last_results.values())
         return last_results
 
     def get_all_execution_result(self, plan_id, case_ext_id):
+        """
+        Get all execution results
+        :param plan_id:
+        :param case_ext_id:
+        :return:
+        """
         all_results = self._get_all_execution_results(plan_id=plan_id, case_ext_id=case_ext_id)
         for key, value in all_results.items():
             return value
 
     # Report Operation
-    def get_report_for_plan(self, project_name: str = '', project_id: str = '',
-                            plan_name: str = '', plan_id: str = '',
-                            build_name: str = '', build_id: str = '',
-                            platform_name: str = '', platform_id: str = ''):
+    def get_report_for_plan(self, project_name: str = '', plan_name: str = '',
+                            build_name: str = '', platform_name: str = '', **kwargs):
+        """
+        Get test report for the plan
+        :param project_name:
+        :param plan_name:
+        :param build_name:
+        :param platform_name:
+        :param kwargs: project_id, plan_id, build_id, platform_id
+        :return:
+        """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
+        build_id = kwargs.get('build_id')
+        platform_id = kwargs.get('platform_id')
         last_report = dict()
         last_executed = list()
         cases = self.get_plan(project_id=project_id, project_name=project_name,
