@@ -744,73 +744,70 @@ class TestlinkClient(object):
         """
         return self.delete_project(project_name=project_name)
 
-    def list_requirement(self, project_name: str = '', project_id: str = '',
-                         plan_name: str = '', plan_id: str = '',
-                         platform_name: str = '', platform_id: str = ''):
+    def list_requirement(self, project_name: str = '', plan_name: str = '', platform_name: str = '', **kwargs):
         """
         Get Requirements From The Project [Plan Platform]
         :param project_name:
-        :param project_id:
         :param plan_name:
-        :param plan_id:
         :param platform_name:
-        :param platform_id:
+        :param kwargs: project_id, plan_id, platform_id
         :return:
             {req_id: req_doc_id}
         """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
+        platform_id = kwargs.get('platform_id')
         reqs = dict()
-        for req in self._get_requirements(project_name, project_id, plan_name, plan_id, platform_name, platform_id):
+        for req in self._get_requirements(project_name=project_name, project_id=project_id,
+                                          plan_name=plan_name, plan_id=plan_id,
+                                          platform_name=platform_name, platform_id=platform_id):
             reqs[req.get('id')] = req.get('req_doc_id')
         return reqs
 
-    def get_requirement(self, project_name: str = '', project_id: str = '',
-                        requirement_doc_id: str = ''):
+    def get_requirement(self, project_name: str = '', requirement_doc_id: str = '', **kwargs):
         """
         Get Case List From The Requirement
         :param project_name:
-        :param project_id:
         :param requirement_doc_id:
+        :param kwargs: project_id
         :return:
             {case_external_id: case_name}
         """
+        project_id = kwargs.get('project_id')
         cases = dict()
-        prefix = self._get_project_prefix(project_name, project_id)
-        for case in self._get_requirement_coverage(project_name, project_id, requirement_doc_id):
+        prefix = self._get_project_prefix(project_name=project_name, project_id=project_id)
+        for case in self._get_requirement_coverage(project_name=project_name, project_id=project_id,
+                                                   requirement_doc_id=requirement_doc_id):
             cases['%s-%s' % (prefix, case.get('tc_external_id'))] = case.get('name')
         return cases
 
     # Plan Operations
-    def list_plan(self, project_name: str = '', project_id: str = ''):
+    def list_plan(self, project_name: str = '', **kwargs):
         """
         Get Plan List From The Project
         :param project_name:
-        :param project_id:
+        :param kwargs: project_id
         :return:
             {plan_id: plan_name}
         """
+        project_id = kwargs.get('project_id')
         plans = dict()
         for testplan in self._get_project_test_plans(project_name=project_name, project_id=project_id):
             plans[testplan.get('id')] = testplan.get('name')
         self._tree(plans.values(), root=project_name)
         return plans
 
-    def get_plan(self, project_name: str = '', project_id: str = '',
-                 plan_name: str = '', plan_id: str = '',
-                 build_name: str = '', build_id: str = '',
-                 platform_name: str = '', platform_id: str = '',
-                 requirement_doc_id: str = ''):
+    def get_plan(self, project_name: str = '', plan_name: str = '', build_name: str = '', platform_name: str = '',
+                 requirement_doc_id: str = '', **kwargs):
         """
         Get Case Execution Results From The Plan
         :param project_name:
-        :param project_id:
         :param plan_name:
-        :param plan_id:
         :param build_name:
-        :param build_id:
         :param platform_name:
-        :param platform_id:
         :param requirement_doc_id:
-        :return:
+        :param kwargs: project_id, plan_id, build_id, platform_id
+        :return: cases info
             {
                 case_external_id: {
                     'case_name': case_name,
@@ -819,10 +816,19 @@ class TestlinkClient(object):
                 }
             }
         """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
+        build_id = kwargs.get('build_id')
+        platform_id = kwargs.get('platform_id')
+        if not plan_id:
+            plan_id = self._get_test_plan_id(project_name=project_name, project_id=project_id, plan_name=plan_name)
         testcases = dict()
-        cases = self._get_test_cases_for_plan(project_name, project_id, plan_name, plan_id,
-                                              build_name, build_id, platform_name, platform_id)
-        req_cases = self.get_requirement(project_name, project_id, requirement_doc_id).keys() if requirement_doc_id else []
+        cases = self._get_test_cases_for_plan(project_name=project_name, project_id=project_id,
+                                              plan_name=plan_name, plan_id=plan_id,
+                                              build_name=build_name, build_id=build_id,
+                                              platform_name=platform_name, platform_id=platform_id)
+        req_cases = self.get_requirement(project_name=project_name, project_id=project_id,
+                                         requirement_doc_id=requirement_doc_id).keys() if requirement_doc_id else []
         for testcase in cases.values():
             tc = testcase[sorted(testcase.keys())[0]]
             tc_id = tc.get('full_external_id')
@@ -830,7 +836,7 @@ class TestlinkClient(object):
                 continue
             tc_bugs = list()
             if tc.get('exec_status') in ['f', 'b']:
-                for bid in self.get_all_execution_result(plan_id, tc_id).get('bugs'):
+                for bid in self.get_all_execution_result(plan_id=plan_id, case_ext_id=tc_id).get('bugs'):
                     tc_bugs.append(bid.get('bug_id'))
             testcases[tc_id] = {
                 'case_name': tc.get('tcase_name'),
@@ -840,16 +846,36 @@ class TestlinkClient(object):
         self._tree(testcases, root=plan_name)
         return testcases
 
-    def list_build(self, project_name: str = '', project_id: str = '', plan_name: str = '', plan_id: str = ''):
+    def list_build(self, project_name: str = '', plan_name: str = '', **kwargs):
+        """
+        List all builds
+        :param project_name:
+        :param plan_name:
+        :param kwargs: project_id, plan_id
+        :return: builds info
+        """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
         builds = dict()
-        results = self._get_builds_for_plan(project_name, project_id, plan_name, plan_id)
+        results = self._get_builds_for_plan(project_name=project_name, project_id=project_id,
+                                            plan_name=plan_name, plan_id=plan_id)
         for result in results:
             builds[result.get('id')] = result.get('name')
         return builds
 
-    def list_platform(self, project_name: str = '', project_id: str = '', plan_name: str = '', plan_id: str = ''):
+    def list_platform(self, project_name: str = '', plan_name: str = '', **kwargs):
+        """
+        List all platforms
+        :param project_name:
+        :param plan_name:
+        :param kwargs: project_id, plan_id
+        :return: platforms info
+        """
+        project_id = kwargs.get('project_id')
+        plan_id = kwargs.get('plan_id')
         platforms = dict()
-        results = self._get_platforms_for_plan(project_name, project_id, plan_name, plan_id)
+        results = self._get_platforms_for_plan(project_name=project_name, project_id=project_id,
+                                               plan_name=plan_name, plan_id=plan_id)
         for result in results:
             platforms[result.get('id')] = result.get('name')
         return platforms
@@ -973,7 +999,7 @@ class TestlinkClient(object):
         return last_results
 
     def get_all_execution_result(self, plan_id, case_ext_id):
-        all_results = self._get_all_execution_results(plan_id, case_ext_id)
+        all_results = self._get_all_execution_results(plan_id=plan_id, case_ext_id=case_ext_id)
         for key, value in all_results.items():
             return value
 
