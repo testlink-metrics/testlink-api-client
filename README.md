@@ -1,9 +1,9 @@
 # testlink-api-client
-[![org](https://img.shields.io/badge/org-truth%20%26%20insurance%20workshop-informational)](http://bx.baoxian-sz.com)
-![author](https://img.shields.io/badge/author-v.stone@163.com-informational)
-![github](https://img.shields.io/github/license/seoktaehyeon/testlink-api-client)
-[![pypi](https://img.shields.io/pypi/v/TestlinkApiClient.svg)](https://pypi.org/project/TestlinkApiClient/)
-[![ref](https://img.shields.io/badge/ref-testlink%20api%20xmlrpc-informational)](https://github.com/TestLinkOpenSourceTRMS/testlink-code/blob/testlink_1_9/lib/api/xmlrpc/v1/xmlrpc.class.php)
+[![org](https://img.shields.io/static/v1?style=for-the-badge&label=org&message=Truth%20%26%20Insurance%20Workshop&color=597ed9)](http://bx.baoxian-sz.com)
+![author](https://img.shields.io/static/v1?style=for-the-badge&label=author&message=v.stone@163.com&color=blue)
+![github](https://img.shields.io/github/license/testlink-metrics/testlink-api-client?style=for-the-badge)
+[![pypi](https://img.shields.io/pypi/v/TestlinkApiClient.svg?style=for-the-badge)](https://pypi.org/project/TestlinkApiClient/)
+[![ref](https://img.shields.io/badge/ref-testlink%20api%20xmlrpc-informational?style=for-the-badge)](https://github.com/TestLinkOpenSourceTRMS/testlink-code/blob/testlink_1_9/lib/api/xmlrpc/v1/xmlrpc.class.php)
 
 ## XML-RPC Client For TestLink
 
