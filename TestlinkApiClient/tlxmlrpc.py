@@ -3,6 +3,7 @@
 # Author: Will v.stone@163.com
 
 from xmlrpc.client import ServerProxy
+from xml.dom.minidom import parse
 
 
 class TestlinkClient(object):
@@ -60,11 +61,26 @@ class TestlinkClient(object):
         print(_tree_str)
         return True
 
+    def _get_issue_tracker(self, **kwargs):
+        """
+        tl.getIssueTrackerSystem
+        :param kwargs: itsname
+        :return:
+        """
+        itsname = kwargs.get('itsname')
+        param = self.dev_key.copy()
+        if itsname:
+            param['itsname'] = itsname
+        else:
+            raise KeyError('itsname is required')
+        results = self.client.getIssueTrackerSystem(param)
+        self._check_results(results)
+        return results
+
     def _create_project(self, **kwargs):
         """
         tl.createTestProject
         :param kwargs: project_name, prefix
-        :param prefix:
         :return:
         """
         project_name = kwargs.get('project_name')
@@ -729,6 +745,25 @@ class TestlinkClient(object):
         return results
 
     # Project Operations
+    def get_issue_tracker(self, its_name: str):
+        """
+        Get Issue Tracker
+        :param its_name: Issue Tracker System Name
+        :return: issue_tracker_info
+        """
+        issue_tracker_info = {
+            'uribase': '',
+            'uriapi': '',
+            'uriview': '',
+        }
+        its_info = tl._get_issue_tracker(itsname=its_name).get('cfg')
+        for its_key in issue_tracker_info.keys():
+            try:
+                issue_tracker_info[its_key] = its_info.split('<' + its_key + '>')[1].split('</' + its_key + '>')[0]
+            except Exception as e:
+                print(e)
+        return issue_tracker_info
+
     def list_project(self):
         """
         List all projects

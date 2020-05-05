@@ -7,7 +7,7 @@ import os
 
 URL = 'https://github.com/testlink-metrics/testlink-api-client',
 NAME = 'TestlinkApiClient'
-VERSION = '0.4.0'
+VERSION = '0.5.0'
 DESCRIPTION = 'TestLink API XML-RPC Client'
 if os.path.exists('README.md'):
     with open('README.md', encoding='utf-8') as f:
