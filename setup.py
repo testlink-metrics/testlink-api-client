@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 import os
 
 
-URL = 'https://github.com/testlink-metrics/testlink-api-client',
+URL = 'https://github.com/testlink-metrics/testlink-api-client'
 NAME = 'TestlinkApiClient'
 VERSION = '0.5.0'
 DESCRIPTION = 'TestLink API XML-RPC Client'
