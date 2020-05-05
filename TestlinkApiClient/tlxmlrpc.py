@@ -756,7 +756,7 @@ class TestlinkClient(object):
             'uriapi': '',
             'uriview': '',
         }
-        its_info = tl._get_issue_tracker(itsname=its_name).get('cfg')
+        its_info = self._get_issue_tracker(itsname=its_name).get('cfg')
         for its_key in issue_tracker_info.keys():
             try:
                 issue_tracker_info[its_key] = its_info.split('<' + its_key + '>')[1].split('</' + its_key + '>')[0]
